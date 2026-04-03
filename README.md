@@ -18,9 +18,14 @@ File conversion API plugin — convert images, audio, documents, and data format
 
 Sign up free at [qkconvert.dev](https://qkconvert.dev/portal/signup) (Google, GitHub, or email), then create an API key in the dashboard.
 
-**Claude Code** — set as environment variable in your shell config (`.bashrc`, `.zshrc`, etc.):
+**Claude Code (Mac/Linux)** — add to your shell config (`.bashrc`, `.zshrc`):
 ```bash
 export QKCONVERT_API_KEY=sk_live_...
+```
+
+**Claude Code (Windows)** — run in CMD or PowerShell (persists across sessions):
+```
+setx QKCONVERT_API_KEY sk_live_...
 ```
 
 **Cowork** — set in the plugin's environment configuration when prompted during install, or via Settings > Plugins > QkConvert > Environment Variables.

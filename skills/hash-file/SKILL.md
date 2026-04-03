@@ -19,7 +19,9 @@ Check that `QKCONVERT_API_KEY` is set by running `test -n "$QKCONVERT_API_KEY" &
 > Your QkConvert API key is not set. To fix this:
 > 1. Sign up free at https://qkconvert.dev/portal/signup
 > 2. Create an API key in the dashboard
-> 3. Add `export QKCONVERT_API_KEY=sk_live_...` to your shell config (~/.bashrc or ~/.zshrc)
+> 3. Set the env var permanently:
+>    - **Mac/Linux:** Add `export QKCONVERT_API_KEY=sk_live_...` to `~/.bashrc` or `~/.zshrc`
+>    - **Windows:** Run `setx QKCONVERT_API_KEY sk_live_...` in CMD or PowerShell
 > 4. Restart Claude Code
 
 Do not proceed with the API call until the key is confirmed set.
