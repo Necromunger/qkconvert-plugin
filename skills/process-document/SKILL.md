@@ -12,6 +12,18 @@ argument-hint: "<file> [operation]"
 
 Process PDF files via QkConvert. Costs 2 credits per request.
 
+## Before you start
+
+Check that `QKCONVERT_API_KEY` is set by running `echo $QKCONVERT_API_KEY` in bash. If empty, tell the user:
+
+> Your QkConvert API key is not set. To fix this:
+> 1. Sign up free at https://qkconvert.dev/portal/signup
+> 2. Create an API key in the dashboard
+> 3. Add `export QKCONVERT_API_KEY=sk_live_...` to your shell config (~/.bashrc or ~/.zshrc)
+> 4. Restart Claude Code
+
+Do not proceed with the API call until the key is confirmed set.
+
 ## Workflow
 
 ### 1. Parse the request
