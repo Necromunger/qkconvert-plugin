@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "qkconvert",
-      "source": ".",
+      "source": "./",
       "description": "Convert images, audio, documents, and data formats via the QkConvert API. 53 endpoints, credit-based pricing.",
       "version": "1.0.0",
       "author": {
