@@ -1,8 +1,6 @@
 # QkConvert Plugin for Claude
 
-File conversion API plugin — convert images, audio, documents, and data formats directly from Claude Code and Cowork.
-
-53 endpoints across 7 categories. Credit-based pricing. Powered by Rust.
+File conversion API plugin — convert images, audio, documents, and data formats directly from Claude Code and Cowork. [Try it in the sandbox](https://qkconvert.dev/sandbox) — 20 requests/day, no signup required.
 
 ## Install
 
@@ -29,15 +27,34 @@ export QKCONVERT_API_KEY=sk_live_...
 
 The plugin reads `QKCONVERT_API_KEY` from the environment and passes it as `Authorization: Bearer` to all API calls.
 
+> **No key yet?** Try the [sandbox](https://qkconvert.dev/sandbox) first — 20 free requests per day with no signup.
+
 ## Skills
 
-| Skill | What it does | Credits |
-|-------|-------------|---------|
-| `/convert-image` | Convert, resize, optimize, watermark, strip EXIF, generate thumbnails | 1 |
-| `/convert-audio` | Convert, trim, merge, split, normalize volume, generate waveform | 3 |
-| `/process-document` | Merge, split, compress, watermark, extract text, render to image, create PDF | 2 |
-| `/convert-data` | Convert between CSV, JSON, XML, YAML, XLSX, TOML (25 pairs) + Markdown to HTML | 1 |
-| `/hash-file` | Compute MD5, SHA-1, SHA-256, SHA-512, CRC32 for any file | 1 |
+5 skills covering 53 API endpoints. Archive and QR/barcode endpoints are accessible via the MCP bridge but don't have dedicated skills — call them through the OpenAPI tools directly.
+
+| Skill | What it does | Credits | Endpoints covered |
+|-------|-------------|---------|-------------------|
+| `/convert-image` | Convert, resize, optimize, watermark, strip EXIF, generate thumbnails, QR codes, barcodes | 1 | 9 |
+| `/convert-audio` | Convert, trim, merge, split, normalize volume, generate waveform | 3 | 7 |
+| `/process-document` | Merge, split, compress, watermark, extract text, render to image, create PDF | 2 | 9 |
+| `/convert-data` | Convert between CSV, JSON, XML, YAML, XLSX, TOML + Markdown to HTML | 1 | 25 |
+| `/hash-file` | Compute MD5, SHA-1, SHA-256, SHA-512, CRC32 for any file | 1 | 1 |
+| *(MCP bridge)* | ZIP create, ZIP inspect | 2 | 2 |
+
+**Total: 53 endpoints across 7 categories** — see the [OpenAPI spec](https://qkconvert.dev/api/openapi.json) for the full inventory.
+
+## Output Files
+
+All skills save output files to the **current working directory** by default, using the original filename with the new extension (e.g. `photo.png` → `photo.webp`). If a file with that name already exists, the skill will ask before overwriting.
+
+Skills are **manually chainable** — run one, then reference the output path in the next:
+```
+/convert-image photo.tiff to png
+/hash-file photo.png sha256
+```
+
+Automatic piping between skills is not currently supported — each skill runs as an independent API call.
 
 ## Examples
 
@@ -66,12 +83,6 @@ The plugin reads `QKCONVERT_API_KEY` from the environment and passes it as `Auth
 /hash-file release.zip sha256
 ```
 
-**Chain operations** — convert then hash:
-```
-/convert-image scan.tiff to png
-/hash-file scan.png sha256
-```
-
 ## Pricing
 
 | Plan | Monthly | Credits | Rate limit | Overage |
@@ -83,14 +94,14 @@ The plugin reads `QKCONVERT_API_KEY` from the environment and passes it as `Auth
 
 **Credit costs by category:**
 
-| Category | Credits per request | Example operations |
-|----------|--------------------|--------------------|
-| Images | 1 | convert, resize, optimize, watermark, metadata, thumbnails |
-| Data | 1 | csv-to-json, yaml-to-toml, md-to-html, all 25 pairs |
-| File utilities | 1 | hash (MD5, SHA-256, etc.) |
-| Documents | 2 | merge, split, compress, watermark, text extract, to-image |
-| Archives | 2 | zip create, zip inspect |
-| Audio | 3 | convert, trim, merge, split, normalize, waveform |
+| Category | Credits | Endpoints |
+|----------|---------|-----------|
+| Images (convert, resize, optimize, watermark, QR, barcode, EXIF, thumbnails, metadata) | 1 | 9 |
+| Data (CSV, JSON, XML, YAML, XLSX, TOML, Markdown — 25 conversion pairs) | 1 | 25 |
+| File utilities (hash/checksum) | 1 | 1 |
+| Documents (merge, split, compress, watermark, text, to-image, from-images, text-to-pdf, metadata) | 2 | 9 |
+| Archives (ZIP create, ZIP inspect) | 2 | 2 |
+| Audio (convert, trim, merge, split, normalize, waveform, metadata) | 3 | 7 |
 
 Free tier: 500 credits total per month across all categories. For example, 500 image conversions, or 166 audio conversions, or any mix.
 
