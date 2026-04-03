@@ -10,44 +10,92 @@ argument-hint: "<file> to <format>"
 
 # /convert-data
 
-Convert between data formats via QkConvert. 25 conversion pairs supported.
+Convert between data formats via QkConvert. 25 conversion pairs. Costs 1 credit per request.
 
 ## Workflow
 
 ### 1. Parse the request
 
-Identify:
-- **Source file** — path to the data file
-- **Source format** — csv, json, xml, yaml, xlsx, toml, md
-- **Target format** — csv, json, xml, yaml, xlsx, toml, html
+Identify the source file, its format (from extension or content), and the target format.
 
 ### 2. Build the endpoint path
 
-The endpoint follows the pattern: `/api/v1/data/{source}-to-{target}`
+Pattern: `/api/v1/data/{source}-to-{target}`
 
-Examples: `/api/v1/data/csv-to-json`, `/api/v1/data/json-to-toml`, `/api/v1/data/md-to-html`
+Examples:
+- `/api/v1/data/csv-to-json`
+- `/api/v1/data/json-to-toml`
+- `/api/v1/data/yaml-to-xlsx`
+- `/api/v1/data/md-to-html`
 
 ### 3. Call the API
 
-Send the file as multipart form data. The response is the converted text.
+Send the file as multipart with field name `file` or `data`. The response is the converted content (text for most formats, binary for XLSX).
 
 ### 4. Save and report
 
-Save the output to a file (same name, new extension). Show a preview of the first few lines.
+Save output with the appropriate extension. Show a preview of the first few lines for text formats.
 
 ## Conversion Matrix
 
-All bidirectional pairs between CSV, JSON, XML, YAML, XLSX, and TOML are supported (20 pairs). Plus TOML to/from JSON and YAML (4 pairs). Plus Markdown to HTML (1 pair).
+Full bidirectional conversion between: **CSV, JSON, XML, YAML, XLSX, TOML** (20 pairs)
+Plus: **TOML ↔ JSON**, **TOML ↔ YAML** (4 pairs)
+Plus: **Markdown → HTML** (1 pair, one-way)
 
-## Options
+**Not supported:** TOML ↔ CSV/XLSX (hierarchical config vs flat tabular — incompatible structures)
 
-- `pretty` (boolean) — pretty-print JSON output (csv-to-json, xml-to-json, yaml-to-json, toml-to-json)
-- `delimiter` (string) — CSV delimiter: comma (default), "tab", semicolon, pipe
-- `has_header` (boolean) — whether CSV has a header row (default: true)
-- `root_name` (string) — root XML element name (default: "root")
+## Parameters
 
-## Notes
+| Parameter | Type | Applicable to | Default | Description |
+|-----------|------|---------------|---------|-------------|
+| `pretty` | boolean | *-to-json | false | Pretty-print JSON output |
+| `delimiter` | string | csv-to-*, *-to-csv | "," | CSV delimiter. Also accepts "tab", ";", "\|" |
+| `has_header` | boolean | csv-to-* | true | Whether first row is headers |
+| `root_name` | string | *-to-xml | "root" | Root XML element name |
+| `sheet` | string | xlsx-to-* | first sheet | Sheet name to read from XLSX |
+| `full_document` | boolean | md-to-html | false | Wrap in full HTML document |
+| `github_flavored` | boolean | md-to-html | true | Enable GFM tables, strikethrough, task lists |
 
-- TOML requires a top-level object (arrays at root will error)
-- TOML has no null type (null values are stripped silently)
-- Each operation costs 1 credit
+## Format Notes
+
+- **CSV** is untyped — numbers are inferred on parse, but strings and numbers may look different after round-trip
+- **TOML** requires a top-level object (arrays at root will error), and has no null type (null values are silently stripped)
+- **XLSX** is binary — only output as download, not previewable as text
+- **XML** wraps arrays in a root element (configurable via `root_name`)
+- **Markdown → HTML** is one-way only
+
+## Errors
+
+| Code | Meaning | User action |
+|------|---------|-------------|
+| 400 | Malformed input, unsupported conversion pair, non-UTF-8, or file > 10 MB | Check format and encoding |
+| 401 | Invalid API key | Check QKCONVERT_API_KEY |
+| 403 | Monthly credits exhausted | Upgrade plan or wait for reset |
+| 429 | Rate limit exceeded | Wait for Retry-After seconds |
+
+## Examples
+
+Convert CSV to pretty-printed JSON:
+```
+/convert-data users.csv to json, pretty-printed
+```
+
+Convert a TOML config to YAML:
+```
+/convert-data config.toml to yaml
+```
+
+Convert an Excel spreadsheet to JSON:
+```
+/convert-data report.xlsx to json
+```
+
+Convert tab-separated data to XML with custom root:
+```
+/convert-data data.tsv to xml with tab delimiter and root element "records"
+```
+
+Render Markdown as full HTML document:
+```
+/convert-data readme.md to html as full document
+```

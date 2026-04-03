@@ -10,46 +10,93 @@ argument-hint: "<file> to <format>"
 
 # /convert-image
 
-Convert, resize, or process an image file via QkConvert.
+Convert, resize, or process an image file via QkConvert. Costs 1 credit per request.
 
 ## Workflow
 
 ### 1. Parse the request
 
-Identify:
-- **Source file** — path to the image
-- **Operation** — convert, resize, optimize, watermark, or metadata
-- **Target format** — png, jpeg, webp, avif, gif, bmp, tiff, ico (default: webp)
-- **Options** — quality (1-100), width/height, rotation, flip
+Identify the source file, operation, target format, and any options (quality, dimensions, rotation). If no format is specified, suggest webp for photos or png for graphics with transparency.
 
 ### 2. Choose the endpoint
 
-| Need | Endpoint |
-|------|----------|
-| Change format | `/api/v1/image/convert` |
-| Resize, rotate, flip | `/api/v1/image/transform` |
-| Compress for smaller size | `/api/v1/image/optimize` |
-| Add text overlay | `/api/v1/image/watermark` |
-| Get dimensions/format info | `/api/v1/image/metadata` |
-| Strip EXIF data | `/api/v1/image/exif-strip` |
-| Multiple thumbnail sizes | `/api/v1/image/thumbnails` |
+| Need | Endpoint | Key parameters |
+|------|----------|----------------|
+| Change format | `/api/v1/image/convert` | `output_format` (required) |
+| Resize, rotate, flip | `/api/v1/image/transform` | `width`, `height`, `rotate`, `flip` |
+| Compress for smaller size | `/api/v1/image/optimize` | `quality`, `compression` |
+| Add text overlay | `/api/v1/image/watermark` | `text` (required), `position`, `opacity` |
+| Get dimensions/format | `/api/v1/image/metadata` | None (returns JSON) |
+| Strip EXIF data | `/api/v1/image/exif-strip` | None |
+| Multiple thumbnails | `/api/v1/image/thumbnails` | `sizes` array (required) |
 
 ### 3. Call the API
 
-Send the file as multipart form data with the options JSON. Save the binary response to disk.
+Send the file as multipart with field name `image` and options as a JSON string in field `options`. Save the binary response to disk. The output filename should use the target format extension.
 
 ### 4. Report
 
-Show: source format, output format, input size, output size, output path.
+Tell the user: input format, output format, file sizes, and the output path.
 
-## Supported Formats
+## Parameters
 
-Input: JPEG, PNG, WebP, AVIF, GIF, BMP, TIFF, ICO, SVG
-Output: JPEG, PNG, WebP, AVIF, GIF, BMP, TIFF, ICO
+| Parameter | Type | Endpoints | Default | Description |
+|-----------|------|-----------|---------|-------------|
+| `output_format` | string | convert, transform, watermark, thumbnails | - | Required for convert. One of: png, jpeg, webp, avif, gif, bmp, tiff, ico |
+| `quality` | 1-100 | convert, transform, optimize | 85 | Lossy compression for JPEG/WebP/AVIF |
+| `compression` | 1-9 | convert, transform, optimize | 6 | PNG compression level (higher = smaller) |
+| `width` | integer | transform | - | Target width in px (max 10,000). Aspect ratio preserved if height omitted |
+| `height` | integer | transform | - | Target height in px (max 10,000) |
+| `rotate` | integer | transform | - | 90, 180, or 270 only |
+| `flip` | string | transform | - | "horizontal" or "vertical" |
+| `text` | string | watermark | - | Watermark text (max 1,000 chars) |
+| `position` | string | watermark | "center" | "center", "top-left", "top-right", "bottom-left", "bottom-right" |
+| `opacity` | 0-255 | watermark | 128 | Text opacity |
+| `font_size` | float | watermark | 24 | Font size in pixels (1-2000) |
+| `color` | string | watermark | "#FFFFFF" | Hex color e.g. "#FF0000" |
+| `sizes` | int array | thumbnails | - | List of widths. Max 10 sizes |
+| `strip_metadata` | boolean | convert, transform, optimize | false | Remove EXIF/ICC data |
 
-## Notes
+## Formats
 
-- ICO output is clamped to 256x256 max automatically
-- SVG is input-only (rasterized to the target format)
-- WebP typically gives the best size-to-quality ratio for photos
-- Each operation costs 1 credit
+**Input:** JPEG, PNG, WebP, AVIF, GIF, BMP, TIFF, ICO, SVG
+**Output:** JPEG, PNG, WebP, AVIF, GIF, BMP, TIFF, ICO
+
+- SVG is input-only (rasterized on conversion)
+- ICO output auto-clamps to 256x256 max
+
+## Errors
+
+| Code | Meaning | User action |
+|------|---------|-------------|
+| 400 | Unsupported format, corrupt file, missing parameter, or file > 10 MB | Check format and file size |
+| 401 | Invalid API key | Check QKCONVERT_API_KEY |
+| 403 | Monthly credits exhausted (free tier hard cap) | Upgrade plan or wait for reset |
+| 429 | Rate limit exceeded | Wait for Retry-After seconds |
+
+## Examples
+
+Convert a PNG to WebP with quality control:
+```
+/convert-image banner.png to webp at quality 90
+```
+
+Resize to 800px wide and change format:
+```
+/convert-image photo.jpg resize to 800px wide, output as webp
+```
+
+Generate thumbnails at multiple sizes:
+```
+/convert-image product.jpg generate thumbnails at 64, 128, 256, 512
+```
+
+Strip metadata for privacy before sharing:
+```
+/convert-image selfie.jpg strip all metadata
+```
+
+Add a watermark:
+```
+/convert-image photo.jpg add watermark "© 2026 My Company" in bottom-right, opacity 180
+```

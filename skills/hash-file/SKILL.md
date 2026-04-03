@@ -3,39 +3,88 @@ name: hash-file
 description: >
   Compute cryptographic hashes of a file using the QkConvert API. Use when the
   user asks to "hash a file", "get a checksum", "calculate SHA-256", "verify
-  file integrity", "get MD5", or needs MD5, SHA-1, SHA-256, SHA-512, or CRC32.
+  file integrity", "get MD5", "compare file checksums", or needs MD5, SHA-1,
+  SHA-256, SHA-512, or CRC32.
 argument-hint: "<file> [algorithm]"
 ---
 
 # /hash-file
 
-Compute cryptographic hashes for any file via QkConvert.
+Compute cryptographic hashes for any file via QkConvert. Costs 1 credit per request.
 
 ## Workflow
 
 ### 1. Parse the request
 
-Identify:
-- **File** — path to any file
-- **Algorithms** — which hashes to compute (default: all)
+Identify the file path and which algorithms the user wants. Default to all if not specified. If the user says "checksum" without specifying, use SHA-256 (most common).
 
 ### 2. Call the API
 
-Send the file to `/api/v1/file/hash` with the algorithms option.
+Send the file to `/api/v1/file/hash` with field name `file`. Optionally include `options` with an `algorithms` array.
 
 ### 3. Present results
 
-Display each hash value with its algorithm name, plus the file size.
+Display each hash value with its algorithm name, plus the file size in bytes. Format hashes as monospace text for easy copying.
+
+## Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `algorithms` | string array | all 5 | Which hashes to compute. Omit for all. |
 
 ## Supported Algorithms
 
-- `md5` — 128-bit, legacy compatibility
-- `sha1` — 160-bit, used by Git
-- `sha256` — 256-bit, standard integrity check
-- `sha512` — 512-bit, higher security
-- `crc32` — 32-bit, fast checksum
+| Algorithm | Output length | Use case |
+|-----------|--------------|----------|
+| `md5` | 32 hex chars | Legacy compatibility, quick deduplication |
+| `sha1` | 40 hex chars | Git commit hashes, legacy integrity |
+| `sha256` | 64 hex chars | Standard integrity verification |
+| `sha512` | 128 hex chars | Higher security requirements |
+| `crc32` | 8 hex chars | Fast checksums, ZIP headers, error detection |
 
-## Notes
+## Response Format
 
-- Defaults to all algorithms if none specified
-- Each operation costs 1 credit
+```json
+{
+  "size_bytes": 524288,
+  "md5": "d41d8cd98f00b204e9800998ecf8427e",
+  "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+  "sha256": "e3b0c44298fc1c149afbf4c8996fb924...",
+  "sha512": "cf83e1357eefb8bdf1542850d66d8007...",
+  "crc32": "00000000"
+}
+```
+
+Only requested algorithms are included in the response. Unrequested ones are omitted.
+
+## Errors
+
+| Code | Meaning | User action |
+|------|---------|-------------|
+| 400 | Unknown algorithm name or file > 10 MB | Check algorithm spelling and file size |
+| 401 | Invalid API key | Check QKCONVERT_API_KEY |
+| 403 | Monthly credits exhausted | Upgrade plan or wait for reset |
+| 429 | Rate limit exceeded | Wait for Retry-After seconds |
+
+## Examples
+
+Get all hashes for a file:
+```
+/hash-file document.pdf
+```
+
+Get only SHA-256:
+```
+/hash-file release.zip sha256
+```
+
+Compare checksums of two files:
+```
+/hash-file original.bin sha256
+/hash-file download.bin sha256
+```
+
+Quick integrity check with CRC32:
+```
+/hash-file firmware.bin crc32
+```
