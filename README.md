@@ -2,17 +2,22 @@
 
 File conversion API plugin — convert images, audio, documents, and data formats directly from Claude.
 
-## Setup
+## Install
 
-1. Sign up at [qkconvert.dev](https://qkconvert.dev/portal/signup) and create an API key
-2. Set your API key as an environment variable:
-   ```
-   export QKCONVERT_API_KEY=sk_live_...
-   ```
-3. Install the plugin:
-   ```
-   claude plugin install qkconvert
-   ```
+**1. Add the marketplace:**
+```
+/plugin marketplace add Necromunger/qkconvert-plugin
+```
+
+**2. Install the plugin:**
+```
+/plugin install qkconvert@qkconvert-plugin
+```
+
+**3. Set your API key** (sign up free at [qkconvert.dev](https://qkconvert.dev/portal/signup)):
+```
+export QKCONVERT_API_KEY=sk_live_...
+```
 
 ## Skills
 
@@ -32,6 +37,26 @@ File conversion API plugin — convert images, audio, documents, and data format
 /process-document merge report1.pdf report2.pdf
 /convert-data users.csv to json
 /hash-file document.pdf sha256
+```
+
+## Manual MCP Config
+
+If you prefer to configure MCP directly instead of using the plugin:
+
+```json
+{
+  "mcpServers": {
+    "qkconvert": {
+      "command": "npx",
+      "args": ["-y", "@ivotoby/openapi-mcp-server"],
+      "env": {
+        "API_BASE_URL": "https://qkconvert.dev",
+        "OPENAPI_SPEC_PATH": "https://qkconvert.dev/api/openapi.json",
+        "API_HEADERS": "Authorization:Bearer sk_live_..."
+      }
+    }
+  }
+}
 ```
 
 ## Pricing

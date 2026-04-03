@@ -1,0 +1,23 @@
+{
+  "name": "qkconvert-plugin",
+  "owner": {
+    "name": "QkConvert"
+  },
+  "metadata": {
+    "description": "File conversion API plugin for Claude — images, audio, documents, data formats, archives, and hashing."
+  },
+  "plugins": [
+    {
+      "name": "qkconvert",
+      "source": ".",
+      "description": "Convert images, audio, documents, and data formats via the QkConvert API. 53 endpoints, credit-based pricing.",
+      "version": "1.0.0",
+      "author": {
+        "name": "QkConvert"
+      },
+      "homepage": "https://qkconvert.dev",
+      "repository": "https://github.com/Necromunger/qkconvert-plugin",
+      "keywords": ["file-conversion", "images", "audio", "pdf", "data-formats", "api", "qr-code", "hash"]
+    }
+  ]
+}
