@@ -1,0 +1,10 @@
+{
+  "name": "qkconvert",
+  "version": "1.0.0",
+  "description": "File conversion API — images, audio, documents, data formats, archives, and hashing. 53 endpoints, credit-based pricing. Powered by Rust.",
+  "author": {
+    "name": "QkConvert"
+  },
+  "homepage": "https://qkconvert.dev",
+  "keywords": ["file-conversion", "images", "audio", "pdf", "data-formats", "api", "qr-code", "hash"]
+}

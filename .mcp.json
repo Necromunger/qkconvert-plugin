@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "qkconvert": {
+      "command": "npx",
+      "args": ["-y", "@ivotoby/openapi-mcp-server"],
+      "env": {
+        "API_BASE_URL": "https://qkconvert.dev",
+        "OPENAPI_SPEC_PATH": "https://qkconvert.dev/api/openapi.json",
+        "API_HEADERS": "Authorization:Bearer ${QKCONVERT_API_KEY}"
+      }
+    }
+  }
+}
