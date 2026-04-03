@@ -1,0 +1,11 @@
+{
+  "defaults": {
+    "image_format": "webp",
+    "image_quality": 85,
+    "audio_format": "mp3",
+    "audio_bitrate": 192,
+    "pdf_dpi": 150,
+    "hash_algorithm": "sha256",
+    "overwrite_files": false
+  }
+}
