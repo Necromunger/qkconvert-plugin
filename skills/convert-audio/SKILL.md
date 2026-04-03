@@ -14,7 +14,7 @@ Process audio files via QkConvert. Costs 3 credits per request.
 
 ## Before you start
 
-Check that `QKCONVERT_API_KEY` is set by running `echo $QKCONVERT_API_KEY` in bash. If empty, tell the user:
+Check that `QKCONVERT_API_KEY` is set by running `test -n "$QKCONVERT_API_KEY" && echo "set" || echo "not set"` in bash. If not set, tell the user:
 
 > Your QkConvert API key is not set. To fix this:
 > 1. Sign up free at https://qkconvert.dev/portal/signup
