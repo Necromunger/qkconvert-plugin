@@ -24,80 +24,108 @@ Check that `QKCONVERT_API_KEY` is set by running `test -n "$QKCONVERT_API_KEY" &
 >    - **Windows:** Run `setx QKCONVERT_API_KEY sk_live_...` in CMD or PowerShell
 > 4. Restart Claude Code
 
-Do not proceed with the API call until the key is confirmed set.
+Do not proceed until the key is confirmed set.
 
-## Workflow
+## How to call the API
 
-### 1. Parse the request
+Use `curl` via the Bash tool:
 
-Identify the source file(s), operation, target format, and options. For merge, collect all input files.
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/audio/{endpoint} \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "audio=@{input_file}" \
+  -F "options={json_options}" \
+  -o {output_file}
+```
 
-### 2. Choose the endpoint
+**Rules:**
+- Always use `-s` (silent)
+- Always use `-o` to save binary output
+- Use escaped double quotes in options: `-F "options={\"output_format\":\"mp3\"}"`
+- Field name is `audio` (not `file`) for audio endpoints
 
-| Need | Endpoint | Key parameters |
-|------|----------|----------------|
-| Change format | `/api/v1/audio/convert` | `output_format` (required) |
-| Cut to time range | `/api/v1/audio/trim` | `start`, `end` in seconds |
-| Combine files | `/api/v1/audio/merge` | Multiple files, `output_format` |
-| Split by time/silence | `/api/v1/audio/split` | Split parameters |
-| Adjust volume | `/api/v1/audio/normalize` | `target_db` |
-| Visualize waveform | `/api/v1/audio/waveform` | `width`, `height`, `format` |
-| Get duration/info | `/api/v1/audio/metadata` | None (returns JSON) |
+## Curl commands by operation
 
-### 3. Call the API
+### Convert format
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/audio/convert \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "audio=@recording.wav" \
+  -F "options={\"output_format\":\"mp3\",\"bitrate\":192}" \
+  -o recording.mp3
+```
 
-Send with field name `audio` or `file`. For merge, send multiple `audio` fields. Save the binary response to disk.
+### Trim
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/audio/trim \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "audio=@podcast.mp3" \
+  -F "options={\"start\":30.0,\"end\":90.0,\"output_format\":\"mp3\"}" \
+  -o clip.mp3
+```
 
-### 4. Report
+### Merge (multiple files)
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/audio/merge \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "audio=@intro.mp3" \
+  -F "audio=@main.mp3" \
+  -F "audio=@outro.mp3" \
+  -F "options={\"output_format\":\"mp3\"}" \
+  -o merged.mp3
+```
 
-Tell the user: operation, input/output formats, duration if available, file sizes, output path.
+### Split
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/audio/split \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "audio=@long.mp3" \
+  -F "options={\"split_points\":[60.0,120.0],\"output_format\":\"mp3\"}" \
+  -o segments.zip
+```
+
+### Normalize volume
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/audio/normalize \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "audio=@interview.wav" \
+  -F "options={\"target_db\":-14.0,\"output_format\":\"wav\"}" \
+  -o normalized.wav
+```
+
+### Waveform (returns PNG or JSON)
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/audio/waveform \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "audio=@song.mp3" \
+  -F "options={\"output_format\":\"png\",\"width\":800,\"height\":200}" \
+  -o waveform.png
+```
+
+### Metadata (returns JSON, no -o needed)
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/audio/metadata \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "audio=@song.mp3"
+```
 
 ## Parameters
 
 | Parameter | Type | Endpoints | Default | Description |
 |-----------|------|-----------|---------|-------------|
-| `output_format` | string | convert, merge | - | Required. "mp3", "wav", or "flac" |
-| `bitrate` | integer | convert | - | MP3 bitrate in kbps (e.g. 128, 192, 320) |
-| `sample_rate` | integer | convert | - | Sample rate in Hz (e.g. 44100, 48000) |
+| `output_format` | string | convert, merge, trim, split, normalize | - | "mp3", "wav", or "flac" |
+| `bitrate` | integer | convert | - | MP3 kbps (128, 192, 320) |
+| `sample_rate` | integer | convert | - | Hz (44100, 48000) |
 | `channels` | integer | convert | - | 1 (mono) or 2 (stereo) |
-| `start` | float | trim | 0 | Start time in seconds |
-| `end` | float | trim | - | End time in seconds |
-| `target_db` | float | normalize | -16.0 | Target loudness in dBFS |
+| `start` | float | trim | 0 | Start seconds |
+| `end` | float | trim | - | End seconds |
+| `target_db` | float | normalize | -16.0 | Target dBFS |
 
 ## Formats
 
 **Input:** MP3, WAV, FLAC, OGG, AAC, AIFF
-**Output:** MP3, WAV, FLAC
+**Output:** MP3, WAV, FLAC (OGG/AAC/AIFF input-only)
 
-OGG, AAC, and AIFF can be decoded (input) but not encoded (output).
+## After the call
 
-## Errors
-
-| Code | Meaning | User action |
-|------|---------|-------------|
-| 400 | Unsupported format, corrupt file, invalid time range, or file > 10 MB | Check format and parameters |
-| 401 | Invalid API key | Check QKCONVERT_API_KEY |
-| 403 | Monthly credits exhausted | Upgrade plan or wait for reset |
-| 429 | Rate limit exceeded | Wait for Retry-After seconds |
-
-## Examples
-
-Convert WAV to MP3 at 192kbps:
-```
-/convert-audio recording.wav to mp3 at 192kbps
-```
-
-Trim a podcast clip:
-```
-/convert-audio episode.mp3 trim from 1:30 to 5:45
-```
-
-Merge multiple audio files:
-```
-/convert-audio merge intro.mp3 main.mp3 outro.mp3 as flac
-```
-
-Normalize volume:
-```
-/convert-audio normalize interview.wav to -14 dBFS
-```
+Report: operation, input/output formats, file sizes, output path. Use `wc -c < file` for sizes.

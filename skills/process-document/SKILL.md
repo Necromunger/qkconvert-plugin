@@ -24,92 +24,129 @@ Check that `QKCONVERT_API_KEY` is set by running `test -n "$QKCONVERT_API_KEY" &
 >    - **Windows:** Run `setx QKCONVERT_API_KEY sk_live_...` in CMD or PowerShell
 > 4. Restart Claude Code
 
-Do not proceed with the API call until the key is confirmed set.
+Do not proceed until the key is confirmed set.
 
-## Workflow
+## How to call the API
 
-### 1. Parse the request
+Use `curl` via the Bash tool:
 
-Identify the source file(s), operation, and any options (page range, watermark text, DPI, output format).
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/doc/{endpoint} \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "file=@{input_file}" \
+  -F "options={json_options}" \
+  -o {output_file}
+```
 
-### 2. Choose the endpoint
+**Rules:**
+- Always use `-s` (silent)
+- Always use `-o` for binary output (PDF, image, ZIP)
+- Field name is `file` for document endpoints
+- Use escaped double quotes: `-F "options={\"pages\":\"1-5\"}"`
+- For merge and from-images, send multiple `-F "file=@..."` fields
 
-| Need | Endpoint | Key parameters |
-|------|----------|----------------|
-| Combine PDFs | `/api/v1/doc/merge` | 2-50 PDF files |
-| Extract pages | `/api/v1/doc/split` | `pages` range string |
-| Reduce file size | `/api/v1/doc/compress` | None |
-| Add text watermark | `/api/v1/doc/watermark` | `text` (required) |
-| Get text content | `/api/v1/doc/text` | None (returns JSON) |
-| Render as images | `/api/v1/doc/to-image` | `pages`, `dpi`, `output_format` |
-| Create from images | `/api/v1/doc/from-images` | 1-50 image files |
-| Create from text | `/api/v1/doc/text-to-pdf` | Text/markdown file |
-| Get page count/info | `/api/v1/doc/metadata` | None (returns JSON) |
+## Curl commands by operation
 
-### 3. Call the API
+### Merge PDFs
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/doc/merge \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "file=@part1.pdf" \
+  -F "file=@part2.pdf" \
+  -F "file=@part3.pdf" \
+  -o merged.pdf
+```
 
-Send files with field name `file` or `document`. For merge and from-images, send multiple `file` fields. Save binary response to disk.
+### Split (extract pages)
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/doc/split \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "file=@document.pdf" \
+  -F "options={\"pages\":\"1-5,8,10-12\"}" \
+  -o extracted.pdf
+```
 
-### 4. Report
+### Compress
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/doc/compress \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "file=@large.pdf" \
+  -o compressed.pdf
+```
 
-Tell the user: operation, page count, file sizes, output path.
+### Watermark
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/doc/watermark \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "file=@document.pdf" \
+  -F "options={\"text\":\"DRAFT\",\"opacity\":0.3,\"font_size\":48}" \
+  -o watermarked.pdf
+```
+
+### Extract text (returns JSON, no -o)
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/doc/text \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "file=@document.pdf"
+```
+
+### Render to images (ZIP for multiple pages)
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/doc/to-image \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "file=@document.pdf" \
+  -F "options={\"output_format\":\"png\",\"dpi\":300,\"pages\":\"1-3\"}" \
+  -o pages.zip
+```
+
+### Create PDF from images
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/doc/from-images \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "file=@scan1.jpg" \
+  -F "file=@scan2.jpg" \
+  -F "file=@scan3.jpg" \
+  -o scanned.pdf
+```
+
+### Create PDF from text
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/doc/text-to-pdf \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "file=@document.txt" \
+  -F "options={\"font_size\":12,\"page_size\":\"a4\"}" \
+  -o document.pdf
+```
+
+### Metadata (returns JSON, no -o)
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/doc/metadata \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "file=@document.pdf"
+```
 
 ## Parameters
 
 | Parameter | Type | Endpoints | Default | Description |
 |-----------|------|-----------|---------|-------------|
-| `pages` | string | split, to-image | all | Page range: "1-5", "2,4,6", "1-3,8,10-12" (1-based) |
-| `text` | string | watermark | - | Required. Watermark text (max 500 chars) |
-| `opacity` | float 0-1 | watermark | 0.3 | Watermark transparency |
-| `font_size` | float 1-500 | watermark | 48 | Font size in points |
+| `pages` | string | split, to-image | all | "1-5", "2,4,6", "1-3,8" (1-based) |
+| `text` | string | watermark | - | Max 500 chars |
+| `opacity` | 0.0-1.0 | watermark | 0.3 | Transparency |
+| `font_size` | 1-500 | watermark, text-to-pdf | 48/12 | Points |
 | `color` | string | watermark | "#888888" | Hex color |
-| `rotation` | float | watermark | 45 | Rotation in degrees |
-| `dpi` | integer 72-600 | to-image | 150 | Render resolution |
+| `rotation` | float | watermark | 45 | Degrees |
+| `dpi` | 72-600 | to-image | 150 | Render resolution |
 | `output_format` | string | to-image | "png" | "png" or "jpeg" |
-| `font_size` | float 1-500 | text-to-pdf | 12 | Text font size |
-| `page_size` | string | text-to-pdf | "a4" | "a4", "letter", or "legal" |
-| `title` | string | text-to-pdf | - | PDF title metadata (max 512 chars) |
+| `page_size` | string | text-to-pdf | "a4" | "a4", "letter", "legal" |
 
-## Edge Cases
+## Edge cases
 
-- **to-image** returns a single image for 1 page, or a ZIP archive for multiple pages
-- **from-images** accepts JPEG, PNG, WebP, AVIF, GIF, BMP, TIFF, ICO, SVG — images are JPEG-encoded at 90% quality in the PDF
-- **text** extraction is non-OCR (embedded text only, not scanned documents)
-- **merge** accepts 2-50 PDF files
+- **to-image**: returns single image for 1 page, ZIP for multiple
+- **text**: non-OCR (embedded text only, not scanned docs)
+- **merge**: 2-50 files max
+- **from-images**: 1-50 images, accepts any image format
 - Max file size: 10 MB per file
 
-## Errors
+## After the call
 
-| Code | Meaning | User action |
-|------|---------|-------------|
-| 400 | Corrupt PDF, invalid page range, too many files, or file > 10 MB | Check input and parameters |
-| 401 | Invalid API key | Check QKCONVERT_API_KEY |
-| 403 | Monthly credits exhausted | Upgrade plan or wait for reset |
-| 429 | Rate limit exceeded | Wait for Retry-After seconds |
-
-## Examples
-
-Merge three PDFs:
-```
-/process-document merge part1.pdf part2.pdf part3.pdf
-```
-
-Extract pages 1-5 and page 8:
-```
-/process-document split report.pdf pages 1-5,8
-```
-
-Compress a large PDF:
-```
-/process-document compress thesis.pdf
-```
-
-Render PDF pages as images at 300 DPI:
-```
-/process-document render contract.pdf as jpeg at 300 dpi
-```
-
-Create a PDF from images:
-```
-/process-document create pdf from scan1.jpg scan2.jpg scan3.jpg
-```
+Report: operation, page count (if applicable), file sizes, output path.

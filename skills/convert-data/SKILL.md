@@ -24,92 +24,139 @@ Check that `QKCONVERT_API_KEY` is set by running `test -n "$QKCONVERT_API_KEY" &
 >    - **Windows:** Run `setx QKCONVERT_API_KEY sk_live_...` in CMD or PowerShell
 > 4. Restart Claude Code
 
-Do not proceed with the API call until the key is confirmed set.
+Do not proceed until the key is confirmed set.
 
-## Workflow
+## How to call the API
 
-### 1. Parse the request
+The endpoint pattern is `/api/v1/data/{source}-to-{target}`. Use `curl` via the Bash tool:
 
-Identify the source file, its format (from extension or content), and the target format.
+**For text output (JSON, CSV, XML, YAML, TOML, HTML):**
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/data/{source}-to-{target} \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "file=@{input_file}" \
+  -F "options={json_options}"
+```
+Text responses print to stdout. Pipe to a file with `> output.json` or use `-o`.
 
-### 2. Build the endpoint path
+**For binary output (XLSX):**
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/data/{source}-to-xlsx \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "file=@{input_file}" \
+  -o output.xlsx
+```
 
-Pattern: `/api/v1/data/{source}-to-{target}`
+**Rules:**
+- Always use `-s` (silent)
+- Use `-o` for binary (XLSX), redirect `>` or `-o` for text formats
+- Field name is `file`
+- Use escaped double quotes: `-F "options={\"pretty\":true}"`
 
-Examples:
-- `/api/v1/data/csv-to-json`
-- `/api/v1/data/json-to-toml`
-- `/api/v1/data/yaml-to-xlsx`
-- `/api/v1/data/md-to-html`
+## Curl commands — common conversions
 
-### 3. Call the API
+### CSV to JSON (pretty)
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/data/csv-to-json \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "file=@data.csv" \
+  -F "options={\"pretty\":true}" \
+  -o data.json
+```
 
-Send the file as multipart with field name `file` or `data`. The response is the converted content (text for most formats, binary for XLSX).
+### JSON to CSV
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/data/json-to-csv \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "file=@data.json" \
+  -o data.csv
+```
 
-### 4. Save and report
+### JSON to YAML
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/data/json-to-yaml \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "file=@config.json" \
+  -o config.yaml
+```
 
-Save output with the appropriate extension. Show a preview of the first few lines for text formats.
+### YAML to TOML
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/data/yaml-to-toml \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "file=@config.yaml" \
+  -o config.toml
+```
 
-## Conversion Matrix
+### TOML to JSON
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/data/toml-to-json \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "file=@Cargo.toml" \
+  -F "options={\"pretty\":true}" \
+  -o cargo.json
+```
 
-Full bidirectional conversion between: **CSV, JSON, XML, YAML, XLSX, TOML** (20 pairs)
-Plus: **TOML ↔ JSON**, **TOML ↔ YAML** (4 pairs)
-Plus: **Markdown → HTML** (1 pair, one-way)
+### XLSX to JSON
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/data/xlsx-to-json \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "file=@report.xlsx" \
+  -F "options={\"pretty\":true}" \
+  -o report.json
+```
 
-**Not supported:** TOML ↔ CSV/XLSX (hierarchical config vs flat tabular — incompatible structures)
+### Markdown to HTML
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/data/md-to-html \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "file=@readme.md" \
+  -F "options={\"full_document\":true,\"github_flavored\":true}" \
+  -o readme.html
+```
+
+### CSV with custom delimiter
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/data/csv-to-json \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "file=@data.tsv" \
+  -F "options={\"delimiter\":\"tab\",\"pretty\":true}" \
+  -o data.json
+```
+
+## All supported pairs
+
+The endpoint is always `/api/v1/data/{from}-to-{to}`:
+
+| From \ To | json | csv | xml | yaml | xlsx | toml | html |
+|-----------|------|-----|-----|------|------|------|------|
+| **csv**   | yes  | -   | yes | yes  | yes  | -    | -    |
+| **json**  | -    | yes | yes | yes  | yes  | yes  | -    |
+| **xml**   | yes  | yes | -   | yes  | yes  | -    | -    |
+| **yaml**  | yes  | yes | yes | -    | yes  | yes  | -    |
+| **xlsx**  | yes  | yes | yes | yes  | -    | -    | -    |
+| **toml**  | yes  | -   | -   | yes  | -    | -    | -    |
+| **md**    | -    | -   | -   | -    | -    | -    | yes  |
 
 ## Parameters
 
-| Parameter | Type | Applicable to | Default | Description |
-|-----------|------|---------------|---------|-------------|
-| `pretty` | boolean | *-to-json | false | Pretty-print JSON output |
-| `delimiter` | string | csv-to-*, *-to-csv | "," | CSV delimiter. Also accepts "tab", ";", "\|" |
-| `has_header` | boolean | csv-to-* | true | Whether first row is headers |
+| Parameter | Type | For | Default | Description |
+|-----------|------|-----|---------|-------------|
+| `pretty` | boolean | *-to-json | false | Pretty-print JSON |
+| `delimiter` | string | csv-to-*, *-to-csv | "," | "tab", ";", "\|" |
+| `has_header` | boolean | csv-to-* | true | First row is headers |
 | `root_name` | string | *-to-xml | "root" | Root XML element name |
-| `sheet` | string | xlsx-to-* | first sheet | Sheet name to read from XLSX |
-| `full_document` | boolean | md-to-html | false | Wrap in full HTML document |
-| `github_flavored` | boolean | md-to-html | true | Enable GFM tables, strikethrough, task lists |
+| `sheet` | string | xlsx-to-* | first | Sheet name to read |
+| `full_document` | boolean | md-to-html | false | Full HTML wrapper |
+| `github_flavored` | boolean | md-to-html | true | GFM tables, strikethrough, task lists |
 
-## Format Notes
+## Format notes
 
-- **CSV** is untyped — numbers are inferred on parse, but strings and numbers may look different after round-trip
-- **TOML** requires a top-level object (arrays at root will error), and has no null type (null values are silently stripped)
-- **XLSX** is binary — only output as download, not previewable as text
-- **XML** wraps arrays in a root element (configurable via `root_name`)
-- **Markdown → HTML** is one-way only
+- **TOML**: requires top-level object (no arrays at root), no null values (silently stripped)
+- **CSV**: untyped — numbers inferred on parse
+- **XLSX**: binary format — always use `-o` for output
+- **Markdown to HTML**: one-way only
 
-## Errors
+## After the call
 
-| Code | Meaning | User action |
-|------|---------|-------------|
-| 400 | Malformed input, unsupported conversion pair, non-UTF-8, or file > 10 MB | Check format and encoding |
-| 401 | Invalid API key | Check QKCONVERT_API_KEY |
-| 403 | Monthly credits exhausted | Upgrade plan or wait for reset |
-| 429 | Rate limit exceeded | Wait for Retry-After seconds |
-
-## Examples
-
-Convert CSV to pretty-printed JSON:
-```
-/convert-data users.csv to json, pretty-printed
-```
-
-Convert a TOML config to YAML:
-```
-/convert-data config.toml to yaml
-```
-
-Convert an Excel spreadsheet to JSON:
-```
-/convert-data report.xlsx to json
-```
-
-Convert tab-separated data to XML with custom root:
-```
-/convert-data data.tsv to xml with tab delimiter and root element "records"
-```
-
-Render Markdown as full HTML document:
-```
-/convert-data readme.md to html as full document
-```
+For text formats, show a preview of the first few lines. Report file sizes with `wc -c < file`.

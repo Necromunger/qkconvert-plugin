@@ -24,39 +24,42 @@ Check that `QKCONVERT_API_KEY` is set by running `test -n "$QKCONVERT_API_KEY" &
 >    - **Windows:** Run `setx QKCONVERT_API_KEY sk_live_...` in CMD or PowerShell
 > 4. Restart Claude Code
 
-Do not proceed with the API call until the key is confirmed set.
+Do not proceed until the key is confirmed set.
 
-## Workflow
+## How to call the API
 
-### 1. Parse the request
+Use `curl` via the Bash tool. This endpoint returns JSON (no binary output).
 
-Identify the file path and which algorithms the user wants. Default to all if not specified. If the user says "checksum" without specifying, use SHA-256 (most common).
+### All algorithms (default)
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/file/hash \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "file=@document.pdf"
+```
 
-### 2. Call the API
+### Specific algorithms
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/file/hash \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "file=@document.pdf" \
+  -F "options={\"algorithms\":[\"sha256\",\"md5\"]}"
+```
 
-Send the file to `/api/v1/file/hash` with field name `file`. Optionally include `options` with an `algorithms` array.
+### Single algorithm
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/file/hash \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "file=@release.zip" \
+  -F "options={\"algorithms\":[\"sha256\"]}"
+```
 
-### 3. Present results
+**Rules:**
+- Always use `-s` (silent)
+- No `-o` needed — response is JSON printed to stdout
+- Field name is `file`
+- Use escaped double quotes: `-F "options={\"algorithms\":[\"sha256\"]}"`
 
-Display each hash value with its algorithm name, plus the file size in bytes. Format hashes as monospace text for easy copying.
-
-## Parameters
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `algorithms` | string array | all 5 | Which hashes to compute. Omit for all. |
-
-## Supported Algorithms
-
-| Algorithm | Output length | Use case |
-|-----------|--------------|----------|
-| `md5` | 32 hex chars | Legacy compatibility, quick deduplication |
-| `sha1` | 40 hex chars | Git commit hashes, legacy integrity |
-| `sha256` | 64 hex chars | Standard integrity verification |
-| `sha512` | 128 hex chars | Higher security requirements |
-| `crc32` | 8 hex chars | Fast checksums, ZIP headers, error detection |
-
-## Response Format
+## Response format
 
 ```json
 {
@@ -69,36 +72,20 @@ Display each hash value with its algorithm name, plus the file size in bytes. Fo
 }
 ```
 
-Only requested algorithms are included in the response. Unrequested ones are omitted.
+Only requested algorithms appear. Unrequested ones are omitted.
 
-## Errors
+## Supported algorithms
 
-| Code | Meaning | User action |
-|------|---------|-------------|
-| 400 | Unknown algorithm name or file > 10 MB | Check algorithm spelling and file size |
-| 401 | Invalid API key | Check QKCONVERT_API_KEY |
-| 403 | Monthly credits exhausted | Upgrade plan or wait for reset |
-| 429 | Rate limit exceeded | Wait for Retry-After seconds |
+| Algorithm | Output | Use case |
+|-----------|--------|----------|
+| `md5` | 32 hex chars | Legacy deduplication |
+| `sha1` | 40 hex chars | Git, legacy integrity |
+| `sha256` | 64 hex chars | Standard integrity check |
+| `sha512` | 128 hex chars | Higher security |
+| `crc32` | 8 hex chars | Fast checksums, ZIP headers |
 
-## Examples
+If the user doesn't specify an algorithm, return all. If they say "checksum" without specifying, use sha256.
 
-Get all hashes for a file:
-```
-/hash-file document.pdf
-```
+## After the call
 
-Get only SHA-256:
-```
-/hash-file release.zip sha256
-```
-
-Compare checksums of two files:
-```
-/hash-file original.bin sha256
-/hash-file download.bin sha256
-```
-
-Quick integrity check with CRC32:
-```
-/hash-file firmware.bin crc32
-```
+Parse the JSON response and display each hash with its algorithm name. Format hashes as monospace for easy copying. Include the file size.

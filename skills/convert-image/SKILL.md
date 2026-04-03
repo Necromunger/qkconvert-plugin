@@ -26,91 +26,109 @@ Check that `QKCONVERT_API_KEY` is set by running `test -n "$QKCONVERT_API_KEY" &
 
 Do not proceed with the API call until the key is confirmed set.
 
-## Workflow
+## How to call the API
 
-### 1. Parse the request
+Use `curl` via the Bash tool. Every image endpoint uses the same pattern:
 
-Identify the source file, operation, target format, and any options (quality, dimensions, rotation). If no format is specified, suggest webp for photos or png for graphics with transparency.
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/image/{endpoint} \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "image=@{input_file}" \
+  -F "options={json_options}" \
+  -o {output_file}
+```
 
-### 2. Choose the endpoint
+**Rules:**
+- Always use `-s` (silent) to suppress progress bars
+- Always use `-o` to save binary output to a file
+- Options JSON must use escaped double quotes: `-F "options={\"output_format\":\"webp\"}"`
+- Do NOT use single quotes around the options value — use escaped doubles
+- The output filename should match the target format extension
 
-| Need | Endpoint | Key parameters |
-|------|----------|----------------|
-| Change format | `/api/v1/image/convert` | `output_format` (required) |
-| Resize, rotate, flip | `/api/v1/image/transform` | `width`, `height`, `rotate`, `flip` |
-| Compress for smaller size | `/api/v1/image/optimize` | `quality`, `compression` |
-| Add text overlay | `/api/v1/image/watermark` | `text` (required), `position`, `opacity` |
-| Get dimensions/format | `/api/v1/image/metadata` | None (returns JSON) |
-| Strip EXIF data | `/api/v1/image/exif-strip` | None |
-| Multiple thumbnails | `/api/v1/image/thumbnails` | `sizes` array (required) |
+## Curl commands by operation
 
-### 3. Call the API
+### Convert format
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/image/convert \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "image=@photo.jpg" \
+  -F "options={\"output_format\":\"webp\",\"quality\":85}" \
+  -o photo.webp
+```
 
-Send the file as multipart with field name `image` and options as a JSON string in field `options`. Save the binary response to disk. The output filename should use the target format extension.
+### Resize / rotate / flip
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/image/transform \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "image=@photo.jpg" \
+  -F "options={\"width\":800,\"output_format\":\"webp\"}" \
+  -o photo_800.webp
+```
 
-### 4. Report
+### Optimize (compress)
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/image/optimize \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "image=@photo.jpg" \
+  -F "options={\"quality\":75}" \
+  -o photo_optimized.jpg
+```
 
-Tell the user: input format, output format, file sizes, and the output path.
+### Watermark
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/image/watermark \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "image=@photo.jpg" \
+  -F "options={\"text\":\"Copyright 2026\",\"position\":\"bottom-right\",\"opacity\":180}" \
+  -o photo_watermarked.jpg
+```
+
+### Metadata (returns JSON, no -o needed)
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/image/metadata \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "image=@photo.jpg"
+```
+
+### Strip EXIF
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/image/exif-strip \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "image=@photo.jpg" \
+  -o photo_clean.jpg
+```
+
+### Thumbnails (returns ZIP for multiple sizes)
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/image/thumbnails \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "image=@photo.jpg" \
+  -F "options={\"sizes\":[64,128,256,512],\"output_format\":\"webp\"}" \
+  -o thumbnails.zip
+```
 
 ## Parameters
 
 | Parameter | Type | Endpoints | Default | Description |
 |-----------|------|-----------|---------|-------------|
-| `output_format` | string | convert, transform, watermark, thumbnails | - | Required for convert. One of: png, jpeg, webp, avif, gif, bmp, tiff, ico |
+| `output_format` | string | convert, transform, watermark, thumbnails | - | png, jpeg, webp, avif, gif, bmp, tiff, ico |
 | `quality` | 1-100 | convert, transform, optimize | 85 | Lossy compression for JPEG/WebP/AVIF |
-| `compression` | 1-9 | convert, transform, optimize | 6 | PNG compression level (higher = smaller) |
-| `width` | integer | transform | - | Target width in px (max 10,000). Aspect ratio preserved if height omitted |
-| `height` | integer | transform | - | Target height in px (max 10,000) |
+| `compression` | 1-9 | convert, transform, optimize | 6 | PNG compression level |
+| `width` | integer | transform | - | Max 10,000. Aspect ratio preserved if height omitted |
+| `height` | integer | transform | - | Max 10,000 |
 | `rotate` | integer | transform | - | 90, 180, or 270 only |
 | `flip` | string | transform | - | "horizontal" or "vertical" |
-| `text` | string | watermark | - | Watermark text (max 1,000 chars) |
+| `text` | string | watermark | - | Max 1,000 chars |
 | `position` | string | watermark | "center" | "center", "top-left", "top-right", "bottom-left", "bottom-right" |
 | `opacity` | 0-255 | watermark | 128 | Text opacity |
-| `font_size` | float | watermark | 24 | Font size in pixels (1-2000) |
-| `color` | string | watermark | "#FFFFFF" | Hex color e.g. "#FF0000" |
-| `sizes` | int array | thumbnails | - | List of widths. Max 10 sizes |
+| `sizes` | int array | thumbnails | - | List of widths. Max 10 |
 | `strip_metadata` | boolean | convert, transform, optimize | false | Remove EXIF/ICC data |
 
 ## Formats
 
 **Input:** JPEG, PNG, WebP, AVIF, GIF, BMP, TIFF, ICO, SVG
-**Output:** JPEG, PNG, WebP, AVIF, GIF, BMP, TIFF, ICO
+**Output:** JPEG, PNG, WebP, AVIF, GIF, BMP, TIFF, ICO (SVG input-only, ICO max 256x256)
 
-- SVG is input-only (rasterized on conversion)
-- ICO output auto-clamps to 256x256 max
+## After the call
 
-## Errors
-
-| Code | Meaning | User action |
-|------|---------|-------------|
-| 400 | Unsupported format, corrupt file, missing parameter, or file > 10 MB | Check format and file size |
-| 401 | Invalid API key | Check QKCONVERT_API_KEY |
-| 403 | Monthly credits exhausted (free tier hard cap) | Upgrade plan or wait for reset |
-| 429 | Rate limit exceeded | Wait for Retry-After seconds |
-
-## Examples
-
-Convert a PNG to WebP with quality control:
-```
-/convert-image banner.png to webp at quality 90
-```
-
-Resize to 800px wide and change format:
-```
-/convert-image photo.jpg resize to 800px wide, output as webp
-```
-
-Generate thumbnails at multiple sizes:
-```
-/convert-image product.jpg generate thumbnails at 64, 128, 256, 512
-```
-
-Strip metadata for privacy before sharing:
-```
-/convert-image selfie.jpg strip all metadata
-```
-
-Add a watermark:
-```
-/convert-image photo.jpg add watermark "© 2026 My Company" in bottom-right, opacity 180
-```
+Report to the user: input file, output file, and file sizes. Use `wc -c < file` to get sizes.
