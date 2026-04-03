@@ -60,7 +60,7 @@ curl -s -X POST https://qkconvert.dev/api/v1/audio/convert \
 curl -s -X POST https://qkconvert.dev/api/v1/audio/trim \
   -H "Authorization: Bearer $QKCONVERT_API_KEY" \
   -F "audio=@podcast.mp3" \
-  -F "options={\"start\":30.0,\"end\":90.0,\"output_format\":\"mp3\"}" \
+  -F "options={\"start_secs\":30.0,\"end_secs\":90.0,\"output_format\":\"mp3\"}" \
   -o clip.mp3
 ```
 
@@ -80,7 +80,7 @@ curl -s -X POST https://qkconvert.dev/api/v1/audio/merge \
 curl -s -X POST https://qkconvert.dev/api/v1/audio/split \
   -H "Authorization: Bearer $QKCONVERT_API_KEY" \
   -F "audio=@long.mp3" \
-  -F "options={\"split_points\":[60.0,120.0],\"output_format\":\"mp3\"}" \
+  -F "options={\"segments\":[{\"start_secs\":0.0,\"end_secs\":60.0},{\"start_secs\":60.0,\"end_secs\":120.0}],\"output_format\":\"mp3\"}" \
   -o segments.zip
 ```
 
@@ -117,8 +117,9 @@ curl -s -X POST https://qkconvert.dev/api/v1/audio/metadata \
 | `bitrate` | integer | convert | - | MP3 kbps (128, 192, 320) |
 | `sample_rate` | integer | convert | - | Hz (44100, 48000) |
 | `channels` | integer | convert | - | 1 (mono) or 2 (stereo) |
-| `start` | float | trim | 0 | Start seconds |
-| `end` | float | trim | - | End seconds |
+| `start_secs` | float | trim | 0 | Start time in seconds |
+| `end_secs` | float | trim | - | End time in seconds |
+| `segments` | array | split | - | Array of `{start_secs, end_secs}` objects |
 | `target_db` | float | normalize | -16.0 | Target dBFS |
 
 ## Formats
