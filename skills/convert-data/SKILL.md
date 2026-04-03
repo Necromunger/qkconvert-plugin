@@ -28,7 +28,9 @@ Do not proceed until the key is confirmed set.
 
 ## How to call the API
 
-The endpoint pattern is `/api/v1/data/{source}-to-{target}`. Use `curl` via the Bash tool:
+**Do not call the MCP tools directly** — the OpenAPI-to-MCP bridge cannot send multipart/form-data, so all tool calls arrive with empty content. Always use `curl` via the Bash tool.
+
+The endpoint pattern is `/api/v1/data/{source}-to-{target}`:
 
 **For text output (JSON, CSV, XML, YAML, TOML, HTML):**
 ```bash

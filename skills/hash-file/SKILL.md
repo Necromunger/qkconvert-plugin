@@ -28,7 +28,7 @@ Do not proceed until the key is confirmed set.
 
 ## How to call the API
 
-Use `curl` via the Bash tool. This endpoint returns JSON (no binary output).
+**Do not call the MCP tools directly** — the OpenAPI-to-MCP bridge cannot send multipart/form-data, so all tool calls arrive with empty content. Always use `curl` via the Bash tool. This endpoint returns JSON (no binary output).
 
 ### All algorithms (default)
 ```bash

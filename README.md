@@ -36,7 +36,7 @@ The plugin reads `QKCONVERT_API_KEY` from the environment and passes it as `Auth
 
 ## Skills
 
-5 skills covering 53 API endpoints. Archive and QR/barcode endpoints are accessible via the MCP bridge but don't have dedicated skills — call them through the OpenAPI tools directly.
+5 skills covering 53 API endpoints. All endpoints **must** be called via curl (as the skills do), not by invoking the MCP tools directly — the OpenAPI-to-MCP bridge cannot transmit multipart/form-data bodies, so direct tool calls arrive with empty content regardless of whether you pass a file path or inline data. The MCP tools are exposed for discovery and documentation only.
 
 | Skill | What it does | Credits | Endpoints covered |
 |-------|-------------|---------|-------------------|

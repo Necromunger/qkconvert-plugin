@@ -28,7 +28,9 @@ Do not proceed with the API call until the key is confirmed set.
 
 ## How to call the API
 
-Use `curl` via the Bash tool. Every image endpoint uses the same pattern:
+**Do not call the MCP tools directly** — the OpenAPI-to-MCP bridge cannot send multipart/form-data, so all tool calls arrive with empty content. Always use `curl` via the Bash tool.
+
+Every image endpoint uses the same pattern:
 
 ```bash
 curl -s -X POST https://qkconvert.dev/api/v1/image/{endpoint} \
