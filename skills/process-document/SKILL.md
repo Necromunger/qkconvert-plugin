@@ -4,7 +4,8 @@ description: >
   Process PDF documents using the QkConvert API. Use when the user asks to
   "merge PDFs", "split a PDF", "compress a PDF", "extract text from PDF",
   "convert PDF to images", "add watermark to PDF", "create PDF from images",
-  or "convert text to PDF".
+  "convert text to PDF", "protect a PDF", "password protect PDF",
+  "convert Word to PDF", or "convert Office to PDF".
 argument-hint: "<file> [operation]"
 ---
 
@@ -125,6 +126,24 @@ curl -s -X POST https://qkconvert.dev/api/v1/doc/metadata \
   -F "file=@document.pdf"
 ```
 
+### PDF protect
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/doc/protect \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "file=@document.pdf" \
+  -F "options={\"owner_password\":\"secret\",\"user_password\":\"open123\",\"allow_print\":true,\"allow_copy\":true,\"allow_modify\":false,\"allow_annotate\":true}" \
+  -o protected.pdf
+```
+
+### Office to PDF
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/doc/office-to-pdf \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "file=@report.docx" \
+  -o report.pdf
+```
+Accepts: DOCX, XLSX, PPTX, DOC, XLS, PPT, ODT, ODS, ODP, RTF. No options needed.
+
 ## Parameters
 
 | Parameter | Type | Endpoints | Default | Description |
@@ -138,6 +157,12 @@ curl -s -X POST https://qkconvert.dev/api/v1/doc/metadata \
 | `dpi` | 72-600 | to-image | 150 | Render resolution |
 | `output_format` | string | to-image | "png" | "png" or "jpeg" |
 | `page_size` | string | text-to-pdf | "a4" | "a4", "letter", "legal" |
+| `owner_password` | string | protect | - | Required. Owner password for full access |
+| `user_password` | string | protect | "" | Optional. Password to open the PDF |
+| `allow_print` | bool | protect | true | Allow printing |
+| `allow_copy` | bool | protect | true | Allow copying text |
+| `allow_modify` | bool | protect | false | Allow modifying content |
+| `allow_annotate` | bool | protect | true | Allow annotations |
 
 ## Edge cases
 
@@ -145,6 +170,8 @@ curl -s -X POST https://qkconvert.dev/api/v1/doc/metadata \
 - **text**: non-OCR (embedded text only, not scanned docs)
 - **merge**: 2-50 files max
 - **from-images**: 1-50 images, accepts any image format
+- **protect**: owner_password is required; user_password defaults to empty (no open password)
+- **office-to-pdf**: accepts DOCX, XLSX, PPTX, DOC, XLS, PPT, ODT, ODS, ODP, RTF
 - Max file size: 10 MB per file
 
 ## After the call

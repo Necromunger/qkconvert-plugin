@@ -1,10 +1,12 @@
 ---
 name: convert-image
 description: >
-  Convert, resize, optimize, or watermark an image using the QkConvert API.
-  Use when the user asks to "convert an image", "resize a photo", "compress an
-  image", "convert PNG to WebP", "strip EXIF", "add watermark", or needs to
-  transform image files. Supports JPEG, PNG, WebP, AVIF, GIF, BMP, TIFF, ICO, SVG.
+  Convert, resize, optimize, crop, watermark, or batch-process images using the
+  QkConvert API. Use when the user asks to "convert an image", "resize a photo",
+  "compress an image", "convert PNG to WebP", "strip EXIF", "add watermark",
+  "crop an image", "generate blurhash", "OCR an image", "create a GIF",
+  "extract GIF frames", "reverse a GIF", "batch convert", or needs to transform
+  image files. Supports JPEG, PNG, WebP, AVIF, GIF, BMP, TIFF, ICO, SVG.
 argument-hint: "<file> to <format>"
 ---
 
@@ -109,22 +111,128 @@ curl -s -X POST https://qkconvert.dev/api/v1/image/thumbnails \
   -o thumbnails.zip
 ```
 
+### Crop (pixel or aspect ratio)
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/image/crop \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "image=@{input_file}" \
+  -F "options={\"x\":100,\"y\":50,\"width\":800,\"height\":600}" \
+  -o cropped.jpg
+```
+Or aspect-ratio mode:
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/image/crop \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "image=@{input_file}" \
+  -F "options={\"aspect_ratio\":\"16:9\",\"gravity\":\"center\",\"output_format\":\"webp\"}" \
+  -o cropped.webp
+```
+
+### Blurhash encode (returns JSON, no -o needed)
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/image/blurhash \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "image=@{input_file}" \
+  -F "options={\"components_x\":4,\"components_y\":3}"
+```
+Returns: `{"blurhash":"LEHV6n...","width":800,"height":600,"components_x":4,"components_y":3}`
+
+### Blurhash decode (JSON body, not multipart)
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/image/blurhash-decode \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d "{\"blurhash\":\"LEHV6nWB2yk8pyo0adR*.7kCMdnj\",\"width\":200,\"height\":150}" \
+  -o placeholder.png
+```
+
+### OCR (returns JSON, no -o needed)
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/image/ocr \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "image=@{input_file}" \
+  -F "options={\"language\":\"eng\"}"
+```
+Returns: `{"text":"extracted text...","char_count":42}`
+
+### GIF create (multiple files)
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/image/gif-create \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "image=@frame1.png" \
+  -F "image=@frame2.png" \
+  -F "image=@frame3.png" \
+  -F "options={\"frame_delay_ms\":200,\"loop_count\":0}" \
+  -o animation.gif
+```
+
+### GIF extract
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/image/gif-extract \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "image=@animation.gif" \
+  -F "options={\"frame\":\"0\",\"output_format\":\"png\"}" \
+  -o frame0.png
+```
+For all frames: `options={"frame":"all"}` returns a ZIP.
+
+### GIF reverse
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/image/gif-reverse \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "image=@animation.gif" \
+  -o reversed.gif
+```
+
+### Convert batch (returns ZIP)
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/image/convert-batch \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "image=@photo1.jpg" \
+  -F "image=@photo2.png" \
+  -F "image=@photo3.bmp" \
+  -F "options={\"output_format\":\"webp\",\"quality\":85}" \
+  -o converted.zip
+```
+
+### Transform batch (returns ZIP)
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/image/transform-batch \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "image=@photo1.jpg" \
+  -F "image=@photo2.jpg" \
+  -F "options={\"width\":800,\"output_format\":\"webp\"}" \
+  -o resized.zip
+```
+
 ## Parameters
 
 | Parameter | Type | Endpoints | Default | Description |
 |-----------|------|-----------|---------|-------------|
-| `output_format` | string | convert, transform, watermark, thumbnails | - | png, jpeg, webp, avif, gif, bmp, tiff, ico |
-| `quality` | 1-100 | convert, transform, optimize | 85 | Lossy compression for JPEG/WebP/AVIF |
-| `compression` | 1-9 | convert, transform, optimize | 6 | PNG compression level |
-| `width` | integer | transform | - | Max 10,000. Aspect ratio preserved if height omitted |
-| `height` | integer | transform | - | Max 10,000 |
-| `rotate` | integer | transform | - | 90, 180, or 270 only |
-| `flip` | string | transform | - | "horizontal" or "vertical" |
+| `output_format` | string | convert, transform, watermark, thumbnails, crop, gif-extract, blurhash-decode, convert-batch, transform-batch | - | png, jpeg, webp, avif, gif, bmp, tiff, ico |
+| `quality` | 1-100 | convert, transform, optimize, convert-batch, transform-batch | 85 | Lossy compression for JPEG/WebP/AVIF |
+| `compression` | 1-9 | convert, transform, optimize, convert-batch, transform-batch | 6 | PNG compression level |
+| `width` | integer | transform, blurhash-decode, transform-batch | - | Max 10,000. Aspect ratio preserved if height omitted |
+| `height` | integer | transform, blurhash-decode, transform-batch | - | Max 10,000 |
+| `rotate` | integer | transform, transform-batch | - | 90, 180, or 270 only |
+| `flip` | string | transform, transform-batch | - | "horizontal" or "vertical" |
 | `text` | string | watermark | - | Max 1,000 chars |
 | `position` | string | watermark | "center" | "center", "top-left", "top-right", "bottom-left", "bottom-right" |
 | `opacity` | 0-255 | watermark | 128 | Text opacity |
 | `sizes` | int array | thumbnails | - | List of widths. Max 10 |
 | `strip_metadata` | boolean | convert, transform, optimize | false | Remove EXIF/ICC data |
+| `x` | integer | crop | - | Left edge of crop region (pixels) |
+| `y` | integer | crop | - | Top edge of crop region (pixels) |
+| `aspect_ratio` | string | crop | - | e.g. "16:9", "4:3", "1:1". Alternative to pixel crop |
+| `gravity` | string | crop | "center" | "center", "top", "bottom", "left", "right", "top-left", "top-right", "bottom-left", "bottom-right" |
+| `components_x` | 1-9 | blurhash | 4 | Horizontal blurhash components |
+| `components_y` | 1-9 | blurhash | 3 | Vertical blurhash components |
+| `blurhash` | string | blurhash-decode | - | Required. The blurhash string to decode |
+| `punch` | float | blurhash-decode | 1.0 | Contrast adjustment |
+| `language` | string | ocr | "eng" | Tesseract language code |
+| `frame_delay_ms` | integer | gif-create | 100 | Delay between frames in milliseconds |
+| `loop_count` | integer | gif-create | 0 | Number of loops (0 = infinite) |
+| `frame` | string | gif-extract | - | Frame index ("0", "1", ...) or "all" for ZIP |
 
 ## Formats
 
