@@ -5,8 +5,9 @@ description: >
   QkConvert API. Use when the user asks to "convert an image", "resize a photo",
   "compress an image", "convert PNG to WebP", "strip EXIF", "add watermark",
   "crop an image", "generate blurhash", "OCR an image", "create a GIF",
-  "extract GIF frames", "reverse a GIF", "batch convert", or needs to transform
-  image files. Supports JPEG, PNG, WebP, AVIF, GIF, BMP, TIFF, ICO, SVG.
+  "extract GIF frames", "reverse a GIF", "batch convert", "generate QR code",
+  "create barcode", "make QR", or needs to transform image files.
+  Supports JPEG, PNG, WebP, AVIF, GIF, BMP, TIFF, ICO, SVG.
 argument-hint: "<file> to <format>"
 ---
 
@@ -195,6 +196,30 @@ curl -s -X POST https://qkconvert.dev/api/v1/image/convert-batch \
   -o converted.zip
 ```
 
+### QR code (no file upload - options only)
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/image/qr \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "options={\"content\":\"https://example.com\",\"size\":512,\"output_format\":\"png\"}" \
+  -o qr.png
+```
+SVG output:
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/image/qr \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "options={\"content\":\"https://example.com\",\"output_format\":\"svg\"}"
+```
+SVG returns JSON: `{"svg":"<svg ...>","width":256,"height":256}`. Save the `svg` field to a file.
+
+### Barcode (no file upload - options only)
+```bash
+curl -s -X POST https://qkconvert.dev/api/v1/image/barcode \
+  -H "Authorization: Bearer $QKCONVERT_API_KEY" \
+  -F "options={\"content\":\"1234567890128\",\"format\":\"ean13\",\"output_format\":\"png\",\"width\":300,\"height\":100}" \
+  -o barcode.png
+```
+Supported formats: code128, code39, ean13, ean8, upca, itf, codabar.
+
 ### Transform batch (returns ZIP)
 ```bash
 curl -s -X POST https://qkconvert.dev/api/v1/image/transform-batch \
@@ -233,6 +258,13 @@ curl -s -X POST https://qkconvert.dev/api/v1/image/transform-batch \
 | `frame_delay_ms` | integer | gif-create | 100 | Delay between frames in milliseconds |
 | `loop_count` | integer | gif-create | 0 | Number of loops (0 = infinite) |
 | `frame` | string | gif-extract | - | Frame index ("0", "1", ...) or "all" for ZIP |
+| `content` | string | qr, barcode | - | Required. Data to encode |
+| `size` | integer | qr | 256 | QR image size in pixels (width = height) |
+| `fg_color` | string | qr | "#000000" | Foreground hex color |
+| `bg_color` | string | qr | "#FFFFFF" | Background hex color |
+| `format` | string | barcode | - | Required. code128, code39, ean13, ean8, upca, itf, codabar |
+| `width` | integer | barcode | 300 | Output width in pixels |
+| `height` | integer | barcode | 100 | Output height in pixels |
 
 ## Formats
 

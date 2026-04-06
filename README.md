@@ -36,18 +36,18 @@ The plugin reads `QKCONVERT_API_KEY` from the environment and passes it as `Auth
 
 ## Skills
 
-5 skills covering 64 API endpoints. All endpoints **must** be called via curl (as the skills do), not by invoking the MCP tools directly — the OpenAPI-to-MCP bridge cannot transmit multipart/form-data bodies, so direct tool calls arrive with empty content regardless of whether you pass a file path or inline data. The MCP tools are exposed for discovery and documentation only.
+6 skills covering all 64 API endpoints. All endpoints **must** be called via curl (as the skills do), not by invoking the MCP tools directly - the OpenAPI-to-MCP bridge cannot transmit multipart/form-data bodies, so direct tool calls arrive with empty content regardless of whether you pass a file path or inline data. The MCP tools are exposed for discovery and documentation only.
 
 | Skill | What it does | Credits | Endpoints covered |
 |-------|-------------|---------|-------------------|
-| `/convert-image` | Convert, resize, optimize, watermark, strip EXIF, generate thumbnails, QR codes, barcodes, OCR, batch ops, blurhash, GIF, crop | 1 | 18 |
+| `/convert-image` | Convert, resize, optimize, watermark, strip EXIF, thumbnails, QR codes, barcodes, OCR, batch ops, blurhash, GIF, crop | 1 | 18 |
 | `/convert-audio` | Convert, trim, merge, split, normalize volume, generate waveform | 3 | 7 |
 | `/process-document` | Merge, split, compress, watermark, extract text, render to image, create PDF, protect, office-to-pdf | 2 | 11 |
 | `/convert-data` | Convert between CSV, JSON, XML, YAML, XLSX, TOML + Markdown to HTML | 1 | 25 |
 | `/hash-file` | Compute MD5, SHA-1, SHA-256, SHA-512, CRC32 for any file | 1 | 1 |
-| *(MCP bridge)* | ZIP create, ZIP inspect | 2 | 2 |
+| `/archive` | Create ZIP archives, inspect ZIP contents | 2 | 2 |
 
-**Total: 64 endpoints across 7 categories** — see the [OpenAPI spec](https://qkconvert.dev/api/openapi.json) for the full inventory.
+**Total: 64 endpoints across 7 categories** - see the [OpenAPI spec](https://qkconvert.dev/api/openapi.json) for the full inventory.
 
 ## Output Files
 
@@ -164,6 +164,7 @@ skills/
   process-document/SKILL.md
   convert-data/SKILL.md
   hash-file/SKILL.md
+  archive/SKILL.md
 ```
 
 ## Links
